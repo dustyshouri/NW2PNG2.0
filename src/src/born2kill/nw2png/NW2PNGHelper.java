@@ -23,14 +23,18 @@ import java.awt.image.ImageFilter;
 import java.awt.image.ImageProducer;
 import java.awt.image.RGBImageFilter;
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.io.PrintStream;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Date;
-
 import javax.imageio.ImageIO;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
@@ -128,6 +132,16 @@ public class NW2PNGHelper implements Runnable {
     }
     
     public void run() {
+      try {
+        FileWriter fstream = new FileWriter("errorLog.txt",false);
+        BufferedWriter out = new BufferedWriter(fstream);
+        out.write("");
+        out.close();
+      } catch (IOException e1) {
+        // TODO Auto-generated catch block
+        e1.printStackTrace();
+      }
+      
       String source_path = getSourceFile().getAbsolutePath();
       tiledefs = new ArrayList<String[]>();
       
@@ -173,6 +187,7 @@ public class NW2PNGHelper implements Runnable {
             getListener().sendMessage("Error: Couldn't save the image");
           }
         }
+        // If Java runs out of memory, let user know and return control
       } catch (OutOfMemoryError e) {
         renderinggmap = false;
         getListener().sendMessage("Error: Out of memory! Try MoreMemory.bat");
@@ -207,8 +222,15 @@ public class NW2PNGHelper implements Runnable {
            
             String level_file_line = level_reader.readLine();
             
+            // Start scanning NW text for parsing
             while (level_file_line != null) {
+                // Ignore any lines commented out.
+                if (level_file_line.startsWith("//")) {
+                  level_file_line = level_reader.readLine();
+                  continue;
+                }
                 if (level_file_line.startsWith("BOARD ")) {
+                    // Look for Tile data
                     level_file.add(level_file_line);
                     level_file_line = level_file_line.substring(6);
                     level_file_line = level_file_line.substring(level_file_line.indexOf(' ') + 1);
@@ -220,11 +242,8 @@ public class NW2PNGHelper implements Runnable {
                         level_highest_layer = level_current_layer;
                     }
                 } else if (level_file_line.indexOf("addtiledef2") >= 0 ) {
+                    // Look for addtiledef2 commands and add it to the tiledefs ArrayList
                     level_file_line = level_file_line.trim();
-                    if (level_file_line.startsWith("\\\\")) {
-                      level_file_line = level_reader.readLine();
-                      continue;
-                    }
                     level_file_line = level_file_line.substring(level_file_line.indexOf("addtiledef2") + 12);
                     
                     level_file_line = level_file_line.replace("(","");
@@ -244,11 +263,8 @@ public class NW2PNGHelper implements Runnable {
                     String[] temparr = {definition,imgname,drawx,drawy};
                     tiledefs.add(temparr);
                 } else if (level_file_line.indexOf("addtiledef") >= 0 && level_file_line.indexOf("addtiledef2") < 0) {
+                  // Treat it like addtiledef2, except send position 0,0 instead
                   level_file_line = level_file_line.trim();
-                  if (level_file_line.startsWith("//")) {
-                    level_file_line = level_reader.readLine();
-                    continue;
-                  }
                   level_file_line = level_file_line.substring(level_file_line.indexOf("addtiledef") + 11);
                   
                   level_file_line = level_file_line.replace("(","");
@@ -265,14 +281,19 @@ public class NW2PNGHelper implements Runnable {
                   String[] temparr = {definition,imgname,Integer.toString(0),Integer.toString(0)};
                   tiledefs.add(temparr);
               }  else if (level_file_line.startsWith("NPC ")) {
+                  // Start parsing NPC
                   double NPCx = 0;
                   double NPCy = 0;
                   String[] parsexy = level_file_line.split("\\s+");
                   NPCx = Integer.parseInt(parsexy[2]);
                   NPCy = Integer.parseInt(parsexy[3]);
                   
-                  level_reader.mark(300);
+                  // Since we're going to scan for the NPC data now set a buffer mark
+                  // After parsing the NPC is done, we can reset the buffer to this position
+                  // for further parsing. 20480 = 10kb, the limit of which to scan forward
+                  level_reader.mark(20480);
                   
+                  // Create array to store showcharacter/gani info in
                   // attrs = {gani,#c0,#c1,#c2,#c3,#c4,#P1,#P2,#P3,#1,#2,#3,#8,param1,dir};
                   String[] attrs = new String[15];
                   boolean foundshowcharacter = false;
@@ -280,6 +301,8 @@ public class NW2PNGHelper implements Runnable {
                   String npc_imgpart = level_reader.readLine();
                   boolean foundgani = false;
                   boolean foundsetimgpart = false;
+                  
+                  // Loop for parsing NPC script. It will only scan ahead 300 lines, or until it finds NPCEND
                   for (int j = 0; j < 300; j++) {
                     npc_imgpart = npc_imgpart.trim();
                     if (npc_imgpart.indexOf("setcharprop") > -1) {
@@ -301,7 +324,8 @@ public class NW2PNGHelper implements Runnable {
                       else if (prop.equals("#8"))  attrs[12] = propvalue;
                     } if (npc_imgpart.indexOf("this.") > -1) {
                       npc_imgpart = npc_imgpart.replaceAll("\"","");
-                      String prop = npc_imgpart.substring(5,npc_imgpart.indexOf("=")).toLowerCase();
+                      String prop = npc_imgpart;
+                      if (npc_imgpart.indexOf("=") >= 0) prop = npc_imgpart.substring(5,npc_imgpart.indexOf("=")).toLowerCase();
                       prop = prop.replaceAll("\\s+","");
                       String propvalue = npc_imgpart.substring(npc_imgpart.indexOf("=")+1,npc_imgpart.indexOf(";"));
                       propvalue = propvalue.trim();
@@ -329,8 +353,10 @@ public class NW2PNGHelper implements Runnable {
                       } catch(Exception e) {
                       }
                     } else if (npc_imgpart.indexOf("showcharacter") > -1) {
+                      // Found a showcharacter?
                       foundshowcharacter = true;
                     } else if (npc_imgpart.trim().startsWith("x") || npc_imgpart.trim().startsWith("this.x")) {
+                      // Parse X modifications to NPC
                       npc_imgpart = npc_imgpart.trim();
                       npc_imgpart = npc_imgpart.replace("this.","");
                       npc_imgpart = npc_imgpart.replaceAll("\\s+","");
@@ -349,6 +375,7 @@ public class NW2PNGHelper implements Runnable {
                         if (newX >= 0) NPCx = findDouble(npc_tokens[1]);
                       }
                     } else if (npc_imgpart.trim().startsWith("y") || npc_imgpart.trim().startsWith("this.y")) {
+                      // Parse Y modifications to NPC
                       npc_imgpart = npc_imgpart.trim();
                       npc_imgpart = npc_imgpart.replace("this.","");
                       npc_imgpart = npc_imgpart.replaceAll("\\s+","");
@@ -367,6 +394,7 @@ public class NW2PNGHelper implements Runnable {
                         if (newY >= 0) NPCy = findDouble(npc_tokens[1]);
                       }
                     }  else if (npc_imgpart.indexOf("setcharani") > -1 && npc_imgpart.indexOf("else") < 0 && foundgani == false) {
+                        // Found setcharani? Check for 'else' to omit overwriting original setcharani
                         npc_imgpart = npc_imgpart.replace("this.","");
                         npc_imgpart = npc_imgpart.replace("("," ");
                         npc_imgpart = npc_imgpart.replace(")","");
@@ -384,6 +412,7 @@ public class NW2PNGHelper implements Runnable {
                         
                         foundgani = true;
                     } else if (npc_imgpart.indexOf("setimgpart") > -1) {
+                      // If 'setimgpart' is found, append its values to the render data
                       npc_imgpart = npc_imgpart.replaceAll("\"","");
                       npc_imgpart = npc_imgpart.replace("this.","");
                       npc_imgpart = npc_imgpart.replace("("," ");
@@ -402,7 +431,10 @@ public class NW2PNGHelper implements Runnable {
                       foundsetimgpart = true;
                       break;
                     } else if (npc_imgpart.startsWith("NPCEND")) {
+                      // End of NPC is found, stop the loop
+                      // If showcharacter is dound, but no gani is found provide it with default 'idle.gani'
                       if (foundshowcharacter == true && attrs[0] == null) attrs[0] = "idle.gani";
+                      // Assign the gani the position of the NPC and add it to the gani StringList
                       if (attrs[0] != null) {
                         String[] pos = {String.valueOf(NPCx),String.valueOf(NPCy)};
                         String[][] concat = {attrs,pos};
@@ -411,8 +443,12 @@ public class NW2PNGHelper implements Runnable {
                       break;
                     }
                     
+                    // If showcharacter is dound, but no gani is found provide it with default 'idle.gani'
+                    if (foundshowcharacter == true && attrs[0] == null) attrs[0] = "idle.gani";
+                    
                     npc_imgpart = level_reader.readLine();
                   }
+                  // If no setimgpart is found, add NPC image and position to the list for rendering
                   if (foundsetimgpart == false && !level_file_line.startsWith("NPC -")) level_file.add(level_file_line + " 0 0 -1 -1");
                   level_reader.reset();
                 }
@@ -492,10 +528,16 @@ public class NW2PNGHelper implements Runnable {
                }
             }
 
+            // Create an empty buffer for tileset
             BufferedImage finaltileset = new BufferedImage(tileset.getWidth(),tileset.getHeight(), BufferedImage.TYPE_INT_ARGB);
             Graphics g = finaltileset.getGraphics();
+            // Draw assigned tileset to tileset buffer
             g.drawImage(tileset, 0, 0, null);
             
+            // Loop through tiledefs and draw them over the buffer, but only if the level name starts with the prefix
+            // From Dusty: Upon further inspection, adding addtiledef to this buffer will cause issues.
+            // It will render the entire tileset over addtiledef2's, depending on the order of which they are parsed
+            // I will have to revisit this.
             for (String[] i : tiledefs) {
               if (level_name.startsWith(i[0])) {
                 try {
@@ -529,6 +571,7 @@ public class NW2PNGHelper implements Runnable {
                 }
             }
             
+            // Loop through the found ganis and render
             for (String[][] gani: ganis) {
               BufferedImage gani_render = getGani(gani[0]);
               if (gani_render == null) {
@@ -546,8 +589,11 @@ public class NW2PNGHelper implements Runnable {
  
             }
 
+            // If not rendering a gmap, or if rendering a gmap that will be split
+            // render NPCs. Otherwise NPCs will be rendered in GMAP function(to avoid clipping)
             if (renderinggmap == false || getSplit() == true) {
               for (String[] npc : level_npcs) {
+                // omit lights and tileset images
                 if (npc[0] == null || npc[0].toLowerCase() == "pics1.png" || npc[0].toLowerCase().contains("light")) continue;
                 int image_x  = findInt(npc[1]);
                 int image_y  = findInt(npc[2]);
@@ -578,18 +624,22 @@ public class NW2PNGHelper implements Runnable {
               }
             }
 
+            // If not rendering a gmap, let the user know the image is being saved
             if (renderinggmap == false) getListener().sendMessage("Rendering and saving the image...");
 
             npcs_g2d.dispose();
             tiles_g2d.drawImage(gmap_npcs, 0, 0, null);
             tiles_g2d.dispose();
             
+            // return the image to either be saved or stitched into the gmap render.
             if (gmap_tiles != null) return gmap_tiles;
 
         } catch (IOException e) {
+          // Let the user know if the level could not be found
+          writeLog(e);
           getListener().sendMessage("Error: Couldn't load the file " + sourcePath.substring(sourcePath.lastIndexOf(File.separator) + 1));
         }
-        getListener().sendMessage("Error: Level was unable to be rendered for an unknown reason.");
+        //getListener().sendMessage("Error: Level was unable to be rendered for an unknown reason.");
         return null;
     }
 
@@ -685,6 +735,7 @@ public class NW2PNGHelper implements Runnable {
               file.getParentFile().mkdir();
               ImageIO.write(nw_render, "png", file);
             } catch (IOException e) {
+              writeLog(e);
               getListener().sendMessage("Error: Couldn't save the image " + nwFile.getName().substring(0,nwFile.getName().length()-3) + ".png");
             }
           } else g.drawImage(nw_render,draw_x,draw_y,null);
@@ -724,6 +775,7 @@ public class NW2PNGHelper implements Runnable {
                                      image_dx,image_dy,image_dx+image_dw,image_dy+image_dh,null);
                }
             } catch (IOException e) {
+              writeLog(e);
               getListener().sendMessage("Warning : Couldn't find the image " + npc[0]);
             }
           }
@@ -732,9 +784,9 @@ public class NW2PNGHelper implements Runnable {
         if (gmapImage != null) return gmapImage;
         
       } catch (FileNotFoundException e) {
-        e.printStackTrace();
+        writeLog(e);
       } catch (IOException e) {
-        e.printStackTrace();
+        writeLog(e);
       }
       getListener().sendMessage("Error: GMAP was unable to be rendered for an unknown reason.");
       return null;
@@ -784,8 +836,10 @@ public class NW2PNGHelper implements Runnable {
           }
           
         } catch (FileNotFoundException e) {
+          writeLog(e);
           //getListener().sendMessage("Error: Failed to find " + imageName);
         } catch (IOException e) {
+          writeLog(e);
           //getListener().sendMessage("Error: Failed to load " + imageName);
         }
         return GraalFolder;
@@ -834,7 +888,7 @@ public class NW2PNGHelper implements Runnable {
         gani_in = new FileReader(getImageLocation(ganiName));
         BufferedReader gani_reader = new BufferedReader(gani_in);
         
-        gani_reader.mark(102400);
+        gani_reader.mark(20480);
         
         String gani_line = gani_reader.readLine();
         String sprite_scan = gani_reader.readLine();
@@ -1033,8 +1087,10 @@ public class NW2PNGHelper implements Runnable {
             //System.out.println(sprite_img + " @ " + sprite_drawx + " : " + sprite_drawy + " | " + sprite_maxW + " : " + sprite_maxH);
             
           } catch (FileNotFoundException e) {
+            writeLog(e);
             getListener().sendMessage("Error: Can't find image: " + sprite_img);
           } catch (IOException e) {
+            writeLog(e);
             getListener().sendMessage("Error: Can't find image: " + sprite_img);
           }
           
@@ -1042,7 +1098,9 @@ public class NW2PNGHelper implements Runnable {
         return ganiImage;
         
       } catch (FileNotFoundException e) {
+        writeLog(e);
       } catch (IOException e) {
+        writeLog(e);
       }
       return null;
     }
@@ -1061,6 +1119,7 @@ public class NW2PNGHelper implements Runnable {
         int return_val = Integer.parseInt(s);
         return return_val;
       } catch (java.lang.NumberFormatException e) {
+        writeLog(e);
         try {
           ScriptEngineManager mgr = new ScriptEngineManager();
           ScriptEngine engine = mgr.getEngineByName("JavaScript");
@@ -1068,6 +1127,7 @@ public class NW2PNGHelper implements Runnable {
           int return_val = (int)math_val;
           return return_val;
         } catch (ScriptException e1) {
+          writeLog(e);
           getListener().sendMessage("Warning: Could not parse: " + s);
           return -1;
         }
@@ -1079,12 +1139,14 @@ public class NW2PNGHelper implements Runnable {
         double return_val = Double.parseDouble(s);
         return return_val;
       } catch (java.lang.NumberFormatException e) {
+        writeLog(e);
         try {
           ScriptEngineManager mgr = new ScriptEngineManager();
           ScriptEngine engine = mgr.getEngineByName("JavaScript");
           double math_val = (Double) engine.eval(s);
           return math_val;
         } catch (ScriptException e1) {
+          writeLog(e);
           getListener().sendMessage("Warning: Could not parse: " + s);
           return -1;
         }
@@ -1202,4 +1264,36 @@ public class NW2PNGHelper implements Runnable {
 
       return bimage;
   }
+    
+    public void writeLog(Throwable t) {
+      try {
+        StringWriter sw = new StringWriter();
+        PrintWriter pw = new PrintWriter(sw, true);
+        t.printStackTrace(pw);
+        pw.flush();
+        sw.flush();
+        
+        FileWriter fstream = new FileWriter("errorLog.txt",true);
+        BufferedWriter out = new BufferedWriter(fstream);
+        out.write(sw.toString() + "\n");
+        out.close();
+      } catch (IOException e) {
+        // TODO Auto-generated catch block
+        e.printStackTrace();
+      }
+    }
+    
+    /*
+    public void writeLog(Exception err) {
+      try {
+        FileWriter fstream = new FileWriter("errorLog.txt",true);
+        BufferedWriter out = new BufferedWriter(fstream);
+        out.write(err.toString() + "\n");
+        out.close();
+      } catch (IOException e) {
+        // TODO Auto-generated catch block
+        e.printStackTrace();
+      }
+    }
+    */
 }
