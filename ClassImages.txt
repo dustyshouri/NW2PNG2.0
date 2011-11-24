@@ -1,0 +1,3 @@
+bush=bush.png
+classic_bush=bush.png
+door=door.png
