@@ -302,36 +302,39 @@ public class NW2PNGHelper implements Runnable {
                       tokens[1] = tokens[1].trim();
                       //getJoin(tokens[1])
                       String newImg = getJoin(tokens[1]);
-                      if (newImg.indexOf(",") < 0) level_file_line = level_file_line.replace("-",newImg);
-                      else {
-                        if (newImg.indexOf(":") >= 0) {
-                          newImg = newImg.replaceAll("\\s+","");
-                          String[] newImgTokens = newImg.split(",");
+                      if (newImg != null) {
+                        if (newImg.indexOf(",") < 0 && level_file_line.contains("-")) {
+                          level_file_line = level_file_line.replace("-",newImg);
+                        } else {
+                          if (newImg.indexOf(":") >= 0) {
+                            newImg = newImg.replaceAll("\\s+","");
+                            String[] newImgTokens = newImg.split(",");
                           
-                          for (String s : newImgTokens) {
-                            String prop = s.substring(0,s.indexOf(":"));
-                            prop = prop.toLowerCase();
-                            String propvalue = s.substring(s.indexOf(":")+1);
-                            propvalue = propvalue.toLowerCase();
+                            for (String s : newImgTokens) {
+                              String prop = s.substring(0,s.indexOf(":"));
+                              prop = prop.toLowerCase();
+                              String propvalue = s.substring(s.indexOf(":")+1);
+                              propvalue = propvalue.toLowerCase();
                             
-                            if (attrs[0] == null && prop.equals("gani"))         attrs[0] = propvalue + ".gani";
-                            else if (attrs[1] == null && prop.equals("skin"))    attrs[1] = propvalue;
-                            else if (attrs[2] == null && prop.equals("coat"))    attrs[2] = propvalue;
-                            else if (attrs[3] == null && prop.equals("sleeves")) attrs[3] = propvalue;
-                            else if (attrs[4] == null && prop.equals("shoes"))   attrs[4] = propvalue;
-                            else if (attrs[5] == null && prop.equals("belt"))    attrs[5] = propvalue;
-                            else if (attrs[6] == null && prop.equals("attr1"))   attrs[6] = propvalue;
-                            else if (attrs[7] == null && prop.equals("attr2"))   attrs[7] = propvalue;
-                            else if (attrs[8] == null && prop.equals("attr3"))   attrs[8] = propvalue;
-                            else if (attrs[9] == null && prop.equals("sword"))   attrs[9] = propvalue;
-                            else if (attrs[10] == null && prop.equals("shield")) attrs[10] = propvalue;
-                            else if (attrs[11] == null && prop.equals("head"))   attrs[11] = propvalue;
-                            else if (attrs[12] == null && prop.equals("body"))   attrs[12] = propvalue;
-                            else if (attrs[13] == null && prop.equals("param1")) attrs[13] = propvalue;
-                            else if (attrs[14] == null && prop.equals("dir"))    attrs[14] = propvalue;
+                              if (attrs[0] == null && prop.equals("gani"))         attrs[0] = propvalue + ".gani";
+                              else if (attrs[1] == null && prop.equals("skin"))    attrs[1] = propvalue;
+                              else if (attrs[2] == null && prop.equals("coat"))    attrs[2] = propvalue;
+                              else if (attrs[3] == null && prop.equals("sleeves")) attrs[3] = propvalue;
+                              else if (attrs[4] == null && prop.equals("shoes"))   attrs[4] = propvalue;
+                              else if (attrs[5] == null && prop.equals("belt"))    attrs[5] = propvalue;
+                              else if (attrs[6] == null && prop.equals("attr1"))   attrs[6] = propvalue;
+                              else if (attrs[7] == null && prop.equals("attr2"))   attrs[7] = propvalue;
+                              else if (attrs[8] == null && prop.equals("attr3"))   attrs[8] = propvalue;
+                              else if (attrs[9] == null && prop.equals("sword"))   attrs[9] = propvalue;
+                              else if (attrs[10] == null && prop.equals("shield")) attrs[10] = propvalue;
+                              else if (attrs[11] == null && prop.equals("head"))   attrs[11] = propvalue;
+                              else if (attrs[12] == null && prop.equals("body"))   attrs[12] = propvalue;
+                              else if (attrs[13] == null && prop.equals("param1")) attrs[13] = propvalue;
+                              else if (attrs[14] == null && prop.equals("dir"))    attrs[14] = propvalue;
+                            }
+                            if (attrs[0] == null) attrs[0] = "idle.gani";
+                            foundshowcharacter = true;
                           }
-                          if (attrs[0] == null) attrs[0] = "idle.gani";
-                          foundshowcharacter = true;
                         }
                       }
                     } 
@@ -354,7 +357,7 @@ public class NW2PNGHelper implements Runnable {
                       else if (prop.equals("#3"))  attrs[11] = propvalue;
                       else if (prop.equals("#8"))  attrs[12] = propvalue;
                     }
-                    if (npc_imgpart.startsWith("this.")) {
+                    if (npc_imgpart.startsWith("this.") && npc_imgpart.indexOf("=") > -1) {
                       npc_imgpart = npc_imgpart.replaceAll("\"","");
                       String prop = npc_imgpart;
                       if (npc_imgpart.indexOf("=") >= 0) prop = npc_imgpart.substring(5,npc_imgpart.indexOf("=")).toLowerCase();
