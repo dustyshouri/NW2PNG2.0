@@ -224,8 +224,10 @@ public class NW2PNGHelper implements Runnable {
             
             // Start scanning NW text for parsing
             while (level_file_line != null) {
+                level_file_line = level_file_line.trim();
                 // Ignore any lines commented out.
                 if (level_file_line.startsWith("//")) {
+                  //System.out.println(level_file_line);
                   level_file_line = level_reader.readLine();
                   continue;
                 }
@@ -322,11 +324,12 @@ public class NW2PNGHelper implements Runnable {
                       else if (prop.equals("#2"))  attrs[10] = propvalue;
                       else if (prop.equals("#3"))  attrs[11] = propvalue;
                       else if (prop.equals("#8"))  attrs[12] = propvalue;
-                    } if (npc_imgpart.indexOf("this.") > -1) {
+                    } if (npc_imgpart.startsWith("this.")) {
                       npc_imgpart = npc_imgpart.replaceAll("\"","");
                       String prop = npc_imgpart;
                       if (npc_imgpart.indexOf("=") >= 0) prop = npc_imgpart.substring(5,npc_imgpart.indexOf("=")).toLowerCase();
                       prop = prop.replaceAll("\\s+","");
+
                       String propvalue = npc_imgpart.substring(npc_imgpart.indexOf("=")+1,npc_imgpart.indexOf(";"));
                       propvalue = propvalue.trim();
                       if (prop.equals("colors[0]"))      attrs[1] = propvalue;
@@ -361,6 +364,7 @@ public class NW2PNGHelper implements Runnable {
                       npc_imgpart = npc_imgpart.replace("this.","");
                       npc_imgpart = npc_imgpart.replaceAll("\\s+","");
                       npc_imgpart = npc_imgpart.replaceAll("\\+","&#43;");
+                      npc_imgpart = npc_imgpart.replace(";","");
                       if (npc_imgpart.indexOf("&#43;&#43;") > -1) NPCx += 1;
                       else if (npc_imgpart.indexOf("--") > -1) NPCx -= 1;
                       else if (npc_imgpart.indexOf("&#43;=") > -1) {
@@ -380,6 +384,7 @@ public class NW2PNGHelper implements Runnable {
                       npc_imgpart = npc_imgpart.replace("this.","");
                       npc_imgpart = npc_imgpart.replaceAll("\\s+","");
                       npc_imgpart = npc_imgpart.replaceAll("\\+","&#43;");
+                      npc_imgpart = npc_imgpart.replace(";","");
                       if (npc_imgpart.indexOf("&#43;&#43;") > -1) NPCy += 1;
                       else if (npc_imgpart.indexOf("--") > -1) NPCy -= 1;
                       else if (npc_imgpart.indexOf("&#43;=") > -1) {
