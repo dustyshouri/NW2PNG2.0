@@ -1,4 +1,4 @@
 tilesetdir=C:\Users\Dusty\Desktop\NW2PNG2.0\images\pics1.png
-sourcedir=C:\Program Files\Graal\classic_collaboration\classic_collaboration.gmap
+sourcedir=C:\Program Files\Graal\dustydestiny\dustydestiny.gmap
 outputdir=C:\Users\Dusty\Desktop\test.png
 graaldir=C:\Program Files\Graal

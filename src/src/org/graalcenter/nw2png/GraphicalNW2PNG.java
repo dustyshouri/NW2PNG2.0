@@ -2,37 +2,13 @@ package src.org.graalcenter.nw2png;
 
 import src.born2kill.nw2png.Listener;
 import src.born2kill.nw2png.NW2PNGHelper;
-import java.awt.Component;
-import java.awt.Container;
-import java.awt.Dimension;
-import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
-import java.awt.Insets;
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
+import java.io.*;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import javax.swing.JButton;
-import javax.swing.JCheckBox;
-import javax.swing.JComboBox;
-import javax.swing.JFileChooser;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JTextPane;
-import javax.swing.ScrollPaneConstants;
-import javax.swing.SwingConstants;
-import javax.swing.UIManager;
+import javax.swing.*;
 
 public class GraphicalNW2PNG implements Listener, ActionListener {
     NW2PNGHelper helper;
@@ -63,6 +39,7 @@ public class GraphicalNW2PNG implements Listener, ActionListener {
     
     JCheckBox filterToggle;
     JCheckBox partimgsToggle;
+    JCheckBox rendernpcsToggle;
 
     JScrollPane logScrollPane;
     JTextPane logTextPane;
@@ -460,7 +437,7 @@ public class GraphicalNW2PNG implements Listener, ActionListener {
 
         topPanel.add(filterToggle, constraints);
         
-        // Toggle filter
+        // Toggle Split Images
         partimgsToggle = new JCheckBox("Split Images");
         partimgsToggle.addActionListener(this);
 
@@ -475,6 +452,22 @@ public class GraphicalNW2PNG implements Listener, ActionListener {
         constraints.insets = new Insets(0, 35, 5, 0);
 
         topPanel.add(partimgsToggle, constraints);
+        
+        // Toggle renderNPCs
+        rendernpcsToggle = new JCheckBox("Render NPCs");
+        rendernpcsToggle.addActionListener(this);
+
+        constraints = new GridBagConstraints();
+        constraints.weightx = 0;
+        constraints.weighty = 0;
+        constraints.fill = GridBagConstraints.NONE;
+        constraints.anchor = GridBagConstraints.WEST;
+        constraints.gridx = 1;
+        constraints.gridy = 6;
+        constraints.gridwidth = 0;
+        constraints.insets = new Insets(0, 117, 5, 0);
+
+        topPanel.add(rendernpcsToggle, constraints);
 
         // Generate
         generateButton = new JButton("Generate");

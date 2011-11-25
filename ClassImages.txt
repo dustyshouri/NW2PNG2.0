@@ -1,3 +1,10 @@
+// You can add a list of classes here that you would like to assign an image to in rendering
+// this is to overcome the issue of not being able to parse the script of a class joined
+// I've already added some examples, use // to add comments for yourself.
 bush=bush.png
-classic_bush=bush.png
 door=door.png
+// An example of defining a gani(not necessarily a showcharacter), and all possible flags 
+// Attributes defined here will not overwrite attributes defined in the NPC itself.
+npcchar=head:head0.png,gani:idle,dir:1,skin:orange,coat:white,sleeves:blue,shoes:red,belt:black,shield:shield1.png,body:body.png,attr1:hat0.png,attr2:null,attr3:null,param1:null
+ninja=skin:black,belt:black,coat:gray,sleeves:gray,shoes:black,head:head19.png,shield:no-shield.png,gani:idle,dir:2
+cactus=classic_cactus1.png
