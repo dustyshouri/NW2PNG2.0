@@ -370,28 +370,6 @@ public class NW2PNGHelper implements Runnable {
                       else if (prop.equals("#3"))  attrs[11] = propvalue;
                       else if (prop.equals("#8"))  attrs[12] = propvalue;
                     }
-                    if (npc_imgpart.startsWith("this.") && npc_imgpart.indexOf("[^+-*%^/\\@=!<>&|]=[^+-*%^/\\@=!<>&|]") > -1 ) {
-                      npc_imgpart = npc_imgpart.replaceAll("\"","");
-                      String prop = npc_imgpart;
-                      
-                      if (npc_imgpart.indexOf("=") >= 0) prop = npc_imgpart.substring(5,npc_imgpart.indexOf("=")).toLowerCase();
-                      prop = prop.replaceAll("\\s+","");
-                      String propvalue = npc_imgpart.substring(npc_imgpart.indexOf("=")+1,npc_imgpart.indexOf(";"));
-                      propvalue = propvalue.trim();
-
-                      if (prop.equals("colors[0]"))      attrs[1] = propvalue;
-                      else if (prop.equals("colors[1]")) attrs[2] = propvalue;
-                      else if (prop.equals("colors[2]")) attrs[3] = propvalue;
-                      else if (prop.equals("colors[3]")) attrs[4] = propvalue;
-                      else if (prop.equals("colors[4]")) attrs[5] = propvalue;
-                      else if (prop.equals("attr[1]"))   attrs[6] = propvalue;
-                      else if (prop.equals("attr[2]"))   attrs[7] = propvalue;
-                      else if (prop.equals("attr[3]"))   attrs[8] = propvalue;
-                      else if (prop.equals("sword")  || prop.equals("swordimg"))  attrs[9] = propvalue;
-                      else if (prop.equals("shield") || prop.equals("shieldimg")) attrs[10] = propvalue;
-                      else if (prop.equals("head")   || prop.equals("headimg"))   attrs[11] = propvalue;
-                      else if (prop.equals("body")   || prop.equals("bodyimg"))   attrs[12] = propvalue;
-                    }
                     
                     if (npc_imgpart.indexOf("dir") > -1) {
                       npc_imgpart = npc_imgpart.replaceAll("\\s+","");
@@ -405,20 +383,17 @@ public class NW2PNGHelper implements Runnable {
                       } catch(Exception e) {
                         writeLog(e);
                       }
-                    } else if (npc_imgpart.indexOf("showcharacter") > -1) {
-                      // Found a showcharacter?
-                      foundshowcharacter = true;
                     } else if (npc_imgpart.trim().startsWith("x") || npc_imgpart.trim().startsWith("this.x")) {
                       // Parse X modifications to NPC
                       npc_imgpart = npc_imgpart.trim();
                       npc_imgpart = npc_imgpart.replace("this.","");
                       npc_imgpart = npc_imgpart.replaceAll("\\s+","");
-                      npc_imgpart = npc_imgpart.replaceAll("\\+","&#43;");
+                      //npc_imgpart = npc_imgpart.replaceAll("\\+","&#43;");
                       npc_imgpart = npc_imgpart.replace(";","");
-                      if (npc_imgpart.indexOf("&#43;&#43;") > -1) NPCx += 1;
+                      if (npc_imgpart.indexOf("++") > -1) NPCx += 1;
                       else if (npc_imgpart.indexOf("--") > -1) NPCx -= 1;
-                      else if (npc_imgpart.indexOf("&#43;=") > -1) {
-                        String[] npc_tokens = npc_imgpart.split("&#43;=");
+                      else if (npc_imgpart.indexOf("+=") > -1) {
+                        String[] npc_tokens = npc_imgpart.split("\\+=");
                         NPCx += findDouble(npc_tokens[1]);
                       } else if (npc_imgpart.indexOf("-=") > -1) {
                         String[] npc_tokens = npc_imgpart.split("-=");
@@ -433,12 +408,12 @@ public class NW2PNGHelper implements Runnable {
                       npc_imgpart = npc_imgpart.trim();
                       npc_imgpart = npc_imgpart.replace("this.","");
                       npc_imgpart = npc_imgpart.replaceAll("\\s+","");
-                      npc_imgpart = npc_imgpart.replaceAll("\\+","&#43;");
+                      //npc_imgpart = npc_imgpart.replaceAll("\\+","&#43;");
                       npc_imgpart = npc_imgpart.replace(";","");
-                      if (npc_imgpart.indexOf("&#43;&#43;") > -1) NPCy += 1;
+                      if (npc_imgpart.indexOf("++") > -1) NPCy += 1;
                       else if (npc_imgpart.indexOf("--") > -1) NPCy -= 1;
-                      else if (npc_imgpart.indexOf("&#43;=") > -1) {
-                        String[] npc_tokens = npc_imgpart.split("&#43;=");
+                      else if (npc_imgpart.indexOf("+=") > -1) {
+                        String[] npc_tokens = npc_imgpart.split("\\+=");
                         NPCy += findDouble(npc_tokens[1]);
                       } else if (npc_imgpart.indexOf("-=") > -1) {
                         String[] npc_tokens = npc_imgpart.split("-=");
@@ -448,7 +423,46 @@ public class NW2PNGHelper implements Runnable {
                         Double newY = findDouble(npc_tokens[1]);
                         if (newY >= 0) NPCy = findDouble(npc_tokens[1]);
                       }
-                    }  else if (npc_imgpart.indexOf("setcharani") > -1 && npc_imgpart.indexOf("else") < 0 && foundgani == false) {
+                      System.out.println(NPCy);
+                    } else if (npc_imgpart.startsWith("this.")) {
+                      String[] checkFor = {"attr[1]","attr[2]","attr[3]","body","bodyimg","colors[0]","colors[1]","colors[2]","colors[3]","colors[4]","head","headimg","shield","shieldimg","sword","swordimg"};
+
+                      npc_imgpart = npc_imgpart.replaceAll("\"","");
+                      String prop = npc_imgpart;
+                      
+                      boolean foundAttr = false;
+                      for (String s : checkFor) {
+                        if (npc_imgpart.indexOf(s) > -1) {
+                          foundAttr = true;
+                          break;
+                        }
+                      }
+                      
+                      if (foundAttr == true) {
+                        if (npc_imgpart.indexOf("=") >= 0) prop = npc_imgpart.substring(5,npc_imgpart.indexOf("=")).toLowerCase();
+                        prop = prop.replaceAll("\\s+","");
+                        String propvalue = npc_imgpart.substring(npc_imgpart.indexOf("=")+1,npc_imgpart.indexOf(";"));
+                        propvalue = propvalue.trim();
+    
+                        if (prop.equals("colors[0]"))      attrs[1] = propvalue;
+                        else if (prop.equals("colors[1]")) attrs[2] = propvalue;
+                        else if (prop.equals("colors[2]")) attrs[3] = propvalue;
+                        else if (prop.equals("colors[3]")) attrs[4] = propvalue;
+                        else if (prop.equals("colors[4]")) attrs[5] = propvalue;
+                        else if (prop.equals("attr[1]"))   attrs[6] = propvalue;
+                        else if (prop.equals("attr[2]"))   attrs[7] = propvalue;
+                        else if (prop.equals("attr[3]"))   attrs[8] = propvalue;
+                        else if (prop.equals("sword")  || prop.equals("swordimg"))  attrs[9] = propvalue;
+                        else if (prop.equals("shield") || prop.equals("shieldimg")) attrs[10] = propvalue;
+                        else if (prop.equals("head")   || prop.equals("headimg"))   attrs[11] = propvalue;
+                        else if (prop.equals("body")   || prop.equals("bodyimg"))   attrs[12] = propvalue;
+                      }
+                    }
+                    
+                    if (npc_imgpart.indexOf("showcharacter") > -1) {
+                      // Found a showcharacter?
+                      foundshowcharacter = true;
+                    } else if (npc_imgpart.indexOf("setcharani") > -1 && npc_imgpart.indexOf("else") < 0 && foundgani == false) {
                         // Found setcharani? Check for 'else' to omit overwriting original setcharani
                         npc_imgpart = npc_imgpart.replace("this.","");
                         npc_imgpart = npc_imgpart.replace("("," ");
