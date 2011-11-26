@@ -370,7 +370,7 @@ public class NW2PNGHelper implements Runnable {
                       else if (prop.equals("#3"))  attrs[11] = propvalue;
                       else if (prop.equals("#8"))  attrs[12] = propvalue;
                     }
-                    if (npc_imgpart.startsWith("this.") && npc_imgpart.indexOf("=") > -1) {
+                    if (npc_imgpart.startsWith("this.") && npc_imgpart.indexOf("[^+-*%^/\\@=!<>&|]=[^+-*%^/\\@=!<>&|]") > -1 ) {
                       npc_imgpart = npc_imgpart.replaceAll("\"","");
                       String prop = npc_imgpart;
                       
