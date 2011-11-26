@@ -423,7 +423,6 @@ public class NW2PNGHelper implements Runnable {
                         Double newY = findDouble(npc_tokens[1]);
                         if (newY >= 0) NPCy = findDouble(npc_tokens[1]);
                       }
-                      System.out.println(NPCy);
                     } else if (npc_imgpart.startsWith("this.")) {
                       String[] checkFor = {"attr[1]","attr[2]","attr[3]","body","bodyimg","colors[0]","colors[1]","colors[2]","colors[3]","colors[4]","head","headimg","shield","shieldimg","sword","swordimg"};
 

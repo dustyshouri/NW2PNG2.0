@@ -1,5 +1,5 @@
 tilesetdir=C:\Users\Dusty\Desktop\NW2PNG2.0\images\pics1.png
-sourcedir=C:\Program Files\Graal\dustydestiny\overworld_137.nw
+sourcedir=C:\Program Files\Graal\vs\world.gmap
 outputdir=C:\Users\Dusty\Desktop\test.png
 graaldir=C:\Program Files\Graal
 filterOutput=true
