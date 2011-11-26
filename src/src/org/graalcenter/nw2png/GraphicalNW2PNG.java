@@ -12,7 +12,7 @@ import javax.swing.*;
 
 public class GraphicalNW2PNG implements Listener, ActionListener {
     NW2PNGHelper helper;
-    private boolean isGenerating = false,filterOutput = true,splitImages = false;
+    private boolean isGenerating = false,filterOutput = true,splitImages = false,renderNPCs = true;
     
     File tilesetdir,sourcedir,outputdir,graaldir;
     
@@ -158,6 +158,22 @@ public class GraphicalNW2PNG implements Listener, ActionListener {
             if (dir_line.indexOf("null") < 0) graaldir = new File(dirname);
           }
           
+          if (dir_line.startsWith("filterOutput=")) {
+            dirname = dir_line.substring(dir_line.indexOf("=") + 1);
+            if (dir_line.indexOf("null") < 0) filterOutput = Boolean.parseBoolean(dirname);
+          }
+          
+          if (dir_line.startsWith("splitImages=")) {
+            dirname = dir_line.substring(dir_line.indexOf("=") + 1);
+            if (dir_line.indexOf("null") < 0) splitImages = Boolean.parseBoolean(dirname);
+          }
+          
+          if (dir_line.startsWith("renderNPCs=")) {
+            dirname = dir_line.substring(dir_line.indexOf("=") + 1);
+            if (dir_line.indexOf("null") < 0) renderNPCs = Boolean.parseBoolean(dirname);
+          }
+          
+          
           dir_line = dirs_reader.readLine();
         }
         //if (sourcedir != null) setSource(sourcedir);
@@ -179,6 +195,9 @@ public class GraphicalNW2PNG implements Listener, ActionListener {
         out.write("sourcedir=" + sourcedir + "\n");
         out.write("outputdir=" + outputdir + "\n");
         out.write("graaldir=" + graaldir + "\n");
+        out.write("filterOutput=" + filterOutput + "\n");
+        out.write("splitImages=" + splitImages + "\n");
+        out.write("renderNPCs=" + renderNPCs + "\n");
         out.close();
       } catch (FileNotFoundException e) {
         e.printStackTrace();
@@ -502,11 +521,16 @@ public class GraphicalNW2PNG implements Listener, ActionListener {
         // update generate button enabled status
         updateGenerateButton();
 
+        filterToggle.setSelected(filterOutput);
+        helper.setFilter(filterOutput);
+        partimgsToggle.setSelected(splitImages);
+        helper.setSplit(splitImages);
+        rendernpcsToggle.setSelected(renderNPCs);
+        helper.setRenderNPCs(renderNPCs);
+        
         // show frame
         frame.pack();
         frame.setVisible(true);
-        
-        filterToggle.setSelected(helper.getFilter());
     }
 
     public static void main(String[] args) throws IOException {
@@ -592,8 +616,12 @@ public class GraphicalNW2PNG implements Listener, ActionListener {
         } else if (object == partimgsToggle) {
           splitImages = partimgsToggle.isSelected();
           helper.setSplit(splitImages);
-        } else if (object == generateButton) {
+        } else if (object == rendernpcsToggle) {
+          renderNPCs = rendernpcsToggle.isSelected();
+          helper.setRenderNPCs(renderNPCs);
+        }  else if (object == generateButton) {
           
+          SaveDirs();
           
             // REVISIT!
             String scaletext = scaleComboBox.getSelectedItem().toString();

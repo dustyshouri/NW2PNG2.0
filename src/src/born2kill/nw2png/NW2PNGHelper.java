@@ -26,7 +26,7 @@ public class NW2PNGHelper implements Runnable {
     private File outputFile;
     private Listener listener;
     private String graalDir = "C:\\Program Files\\Graal\\",filenamecacheDir,parsingLine;
-    private boolean renderinggmap = false,filterOutput = true,splitImages = false;
+    private boolean renderinggmap = false,filterOutput = true,splitImages = false,renderNPCs = true;
     
     int ganiOffsetx = 0;
     int ganiOffsety = 0;
@@ -49,6 +49,16 @@ public class NW2PNGHelper implements Runnable {
     public void setFilter(boolean filter) {
       this.filterOutput = filter;
     }
+    
+    
+    public boolean getRenderNPCs() {
+      return renderNPCs;
+    }
+    
+    public void setRenderNPCs(boolean filter) {
+      this.renderNPCs = filter;
+    }
+    
     
     public boolean getSplit() {
       return splitImages;
@@ -264,7 +274,10 @@ public class NW2PNGHelper implements Runnable {
                   String definition = partitems[1];
                   String[] temparr = {definition,imgname,Integer.toString(0),Integer.toString(0)};
                   tiledefs.add(temparr);
-              }  else if (level_file_line.startsWith("NPC ")) {
+              }  else if (getRenderNPCs() == false) {
+                level_file_line = level_reader.readLine();
+                continue;
+              } else if (level_file_line.startsWith("NPC ")) {
                   // Start parsing NPC
                   double NPCx = 0;
                   double NPCy = 0;
@@ -360,11 +373,12 @@ public class NW2PNGHelper implements Runnable {
                     if (npc_imgpart.startsWith("this.") && npc_imgpart.indexOf("=") > -1) {
                       npc_imgpart = npc_imgpart.replaceAll("\"","");
                       String prop = npc_imgpart;
+                      
                       if (npc_imgpart.indexOf("=") >= 0) prop = npc_imgpart.substring(5,npc_imgpart.indexOf("=")).toLowerCase();
                       prop = prop.replaceAll("\\s+","");
-
                       String propvalue = npc_imgpart.substring(npc_imgpart.indexOf("=")+1,npc_imgpart.indexOf(";"));
                       propvalue = propvalue.trim();
+
                       if (prop.equals("colors[0]"))      attrs[1] = propvalue;
                       else if (prop.equals("colors[1]")) attrs[2] = propvalue;
                       else if (prop.equals("colors[2]")) attrs[3] = propvalue;
@@ -536,6 +550,8 @@ public class NW2PNGHelper implements Runnable {
                     for (int level_x = tiles_start; level_x < tiles_width; level_x ++) {
                         level_tiles[tiles_height][level_x][tiles_layer] = getTileNumber(line.substring(level_x * 2, level_x * 2 + 2));
                     }
+                } else if (getRenderNPCs() == false) {
+                  continue;
                 } else if (line.startsWith("NPC ")) {
                   line = line.substring(4);
 
@@ -614,55 +630,56 @@ public class NW2PNGHelper implements Runnable {
             }
             
             // Loop through the found ganis and render
-            for (String[][] gani: ganis) {
-              BufferedImage gani_render = getGani(gani[0]);
-              if (gani_render == null) {
-                getListener().sendMessage("Warning : Couldn't render the gani " + gani[0][0]);
-                continue;
+            if (getRenderNPCs() == true) {
+              for (String[][] gani: ganis) {
+                BufferedImage gani_render = getGani(gani[0]);
+                if (gani_render == null) {
+                  getListener().sendMessage("Warning : Couldn't render the gani " + gani[0][0]);
+                  continue;
+                }
+                 //System.out.println(gani[0][0] + " : " + gani[1][0] + "," + gani[1][1]);
+                int NPCx = (int)(Double.parseDouble(gani[1][0]) * intTile + (int)(ganiOffsetx*getScale()));
+                int NPCy = (int)(Double.parseDouble(gani[1][1]) * intTile + (int)(ganiOffsety*getScale()));
+                int NPCw = (int)(gani_render.getWidth()*getScale());
+                int NPCh = (int)(gani_render.getHeight()*getScale());
+              
+                //System.out.println("Rendering: " + gani[0][0] + " : " + ganiOffsetx + " : " + ganiOffsety);
+                npcs_g2d.drawImage(gani_render,NPCx,NPCy,NPCw,NPCh,null);
               }
-              //System.out.println(gani[0][0] + " : " + gani[1][0] + "," + gani[1][1]);
-              int NPCx = (int)(Double.parseDouble(gani[1][0]) * intTile + (int)(ganiOffsetx*getScale()));
-              int NPCy = (int)(Double.parseDouble(gani[1][1]) * intTile + (int)(ganiOffsety*getScale()));
-              int NPCw = (int)(gani_render.getWidth()*getScale());
-              int NPCh = (int)(gani_render.getHeight()*getScale());
-              
-              //System.out.println("Rendering: " + gani[0][0] + " : " + ganiOffsetx + " : " + ganiOffsety);
-              npcs_g2d.drawImage(gani_render,NPCx,NPCy,NPCw,NPCh,null);
- 
-            }
 
-            // If not rendering a gmap, or if rendering a gmap that will be split
-            // render NPCs. Otherwise NPCs will be rendered in GMAP function(to avoid clipping)
-            if (renderinggmap == false || getSplit() == true) {
-              for (String[] npc : level_npcs) {
-                // omit lights and tileset images
-                if (npc[0] == null || npc[0].toLowerCase() == "pics1.png" || npc[0].toLowerCase().contains("light")) continue;
-                int image_x  = findInt(npc[1]);
-                int image_y  = findInt(npc[2]);
-                int image_dx = findInt(npc[3]);
-                int image_dy = findInt(npc[4]);
-                int image_dw = findInt(npc[5]);
-                int image_dh = findInt(npc[6]);
+              // If not rendering a gmap, or if rendering a gmap that will be split
+              // render NPCs. Otherwise NPCs will be rendered in GMAP function(to avoid clipping)
+              if (renderinggmap == false || getSplit() == true) {
+                for (String[] npc : level_npcs) {
+                  // omit lights and tileset images
+                  if (npc[0] == null || npc[0].toLowerCase() == "pics1.png" || npc[0].toLowerCase().contains("light")) continue;
+                  int image_x  = findInt(npc[1]);
+                  int image_y  = findInt(npc[2]);
+                  int image_dx = findInt(npc[3]);
+                  int image_dy = findInt(npc[4]);
+                  int image_dw = findInt(npc[5]);
+                  int image_dh = findInt(npc[6]);
               
-                try {
-                  BufferedImage npc_image = ImageIO.read(new File(getImageLocation(npc[0])));
-                  if (npc_image == null) {
-                      getListener().sendMessage("Warning : Unknown image type " + npc[0].substring(npc[0].lastIndexOf(".") + 1).toUpperCase());
-                  } else {
-                      image_dw = image_dw == -1 ? npc_image.getWidth() : image_dw;
-                      image_dh = image_dh == -1 ? npc_image.getHeight() : image_dh;
+                  try {
+                    BufferedImage npc_image = ImageIO.read(new File(getImageLocation(npc[0])));
+                    if (npc_image == null) {
+                        getListener().sendMessage("Warning : Unknown image type " + npc[0].substring(npc[0].lastIndexOf(".") + 1).toUpperCase());
+                    } else {
+                        image_dw = image_dw == -1 ? npc_image.getWidth() : image_dw;
+                        image_dh = image_dh == -1 ? npc_image.getHeight() : image_dh;
                     
-                      int render_x = (image_x) * intTile;
-                      int render_y = (image_y) * intTile;
-                      int render_w = (int)(image_dw * getScale());
-                      int render_h = (int)(image_dh * getScale());
+                        int render_x = (image_x) * intTile;
+                        int render_y = (image_y) * intTile;
+                        int render_w = (int)(image_dw * getScale());
+                        int render_h = (int)(image_dh * getScale());
 
-                      npcs_g2d.drawImage(npc_image,render_x,render_y,render_x + render_w,render_y + render_h,
-                                         image_dx,image_dy,image_dx+image_dw,image_dy+image_dh,null);
-                   }
-                } catch (IOException e) {
-                  writeLog(e);
-                  getListener().sendMessage("Warning : Couldn't find the image " + npc[0]);
+                        npcs_g2d.drawImage(npc_image,render_x,render_y,render_x + render_w,render_y + render_h,
+                                           image_dx,image_dy,image_dx+image_dw,image_dy+image_dh,null);
+                     }
+                  } catch (IOException e) {
+                    writeLog(e);
+                    getListener().sendMessage("Warning : Couldn't find the image " + npc[0]);
+                  }
                 }
               }
             }
@@ -671,7 +688,7 @@ public class NW2PNGHelper implements Runnable {
             if (renderinggmap == false) getListener().sendMessage("Rendering and saving the image...");
 
             npcs_g2d.dispose();
-            tiles_g2d.drawImage(gmap_npcs, 0, 0, null);
+            if (getRenderNPCs() == true) tiles_g2d.drawImage(gmap_npcs, 0, 0, null);
             tiles_g2d.dispose();
             
             // return the image to either be saved or stitched into the gmap render.
@@ -681,6 +698,11 @@ public class NW2PNGHelper implements Runnable {
           // Let the user know if the level could not be found
           writeLog(e);
           getListener().sendMessage("Error: Couldn't load the file " + sourcePath.substring(sourcePath.lastIndexOf(File.separator) + 1));
+        } catch (OutOfMemoryError e) {
+          renderinggmap = false;
+          writeLog(e);
+          getListener().sendMessage("Error: Out of memory! Try MoreMemory.bat");
+          getListener().doneGenerating();
         }
         //getListener().sendMessage("Error: Level was unable to be rendered for an unknown reason.");
         return null;
@@ -787,39 +809,41 @@ public class NW2PNGHelper implements Runnable {
         
         if (getSplit() == true) return null;
         
-        for (int i = 0;i < levels.length;i++) {
-          int draw_x = (i%gmap_width) * intDimension;
-          int draw_y = (int)(i/gmap_width) * intDimension;
+        if (getRenderNPCs() == true) {
+          for (int i = 0;i < levels.length;i++) {
+            int draw_x = (i%gmap_width) * intDimension;
+            int draw_y = (int)(i/gmap_width) * intDimension;
+            
+            for (String[] npc : level_npcs) {
+              if (!npc[7].equals(levels[i])) continue;
+              if (npc[0] == null || npc[0].toLowerCase() == "pics1.png" || npc[0].toLowerCase().contains("light")) continue;
+              int image_x  = findInt(npc[1]);
+              int image_y  = findInt(npc[2]);
+              int image_dx = findInt(npc[3]);
+              int image_dy = findInt(npc[4]);
+              int image_dw = findInt(npc[5]);
+              int image_dh = findInt(npc[6]);
           
-          for (String[] npc : level_npcs) {
-            if (!npc[7].equals(levels[i])) continue;
-            if (npc[0] == null || npc[0].toLowerCase() == "pics1.png" || npc[0].toLowerCase().contains("light")) continue;
-            int image_x  = findInt(npc[1]);
-            int image_y  = findInt(npc[2]);
-            int image_dx = findInt(npc[3]);
-            int image_dy = findInt(npc[4]);
-            int image_dw = findInt(npc[5]);
-            int image_dh = findInt(npc[6]);
-          
-            try {
-              BufferedImage npc_image = ImageIO.read(new File(getImageLocation(npc[0])));
-              if (npc_image == null) {
-                  getListener().sendMessage("Warning : Unknown image type " + npc[0].substring(npc[0].lastIndexOf(".") + 1).toUpperCase());
-              } else {
-                  image_dw = image_dw == -1 ? npc_image.getWidth() : image_dw;
-                  image_dh = image_dh == -1 ? npc_image.getHeight() : image_dh;
+              try {
+                BufferedImage npc_image = ImageIO.read(new File(getImageLocation(npc[0])));
+                if (npc_image == null) {
+                    getListener().sendMessage("Warning : Unknown image type " + npc[0].substring(npc[0].lastIndexOf(".") + 1).toUpperCase());
+                } else {
+                    image_dw = image_dw == -1 ? npc_image.getWidth() : image_dw;
+                    image_dh = image_dh == -1 ? npc_image.getHeight() : image_dh;
                 
-                  int render_x = draw_x + (image_x) * intTile;
-                  int render_y = draw_y + (image_y) * intTile;
-                  int render_w = (int)(image_dw * getScale());
-                  int render_h = (int)(image_dh * getScale());
+                    int render_x = draw_x + (image_x) * intTile;
+                    int render_y = draw_y + (image_y) * intTile;
+                    int render_w = (int)(image_dw * getScale());
+                    int render_h = (int)(image_dh * getScale());
 
-                  g.drawImage(npc_image,render_x,render_y,render_x + render_w,render_y + render_h,
-                                     image_dx,image_dy,image_dx+image_dw,image_dy+image_dh,null);
-               }
-            } catch (IOException e) {
-              writeLog(e);
-              getListener().sendMessage("Warning : Couldn't find the image " + npc[0]);
+                    g.drawImage(npc_image,render_x,render_y,render_x + render_w,render_y + render_h,
+                                       image_dx,image_dy,image_dx+image_dw,image_dy+image_dh,null);
+                 }
+              } catch (IOException e) {
+                writeLog(e);
+                getListener().sendMessage("Warning : Couldn't find the image " + npc[0]);
+              }
             }
           }
         }
