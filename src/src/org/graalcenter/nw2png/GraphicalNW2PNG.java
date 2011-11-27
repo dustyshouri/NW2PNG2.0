@@ -551,7 +551,7 @@ public class GraphicalNW2PNG implements Listener, ActionListener {
         rendernpcsToggle.setSelected(renderNPCs);
         helper.setRenderNPCs(renderNPCs);
         rendercharsToggle.setSelected(renderChars);
-        helper.setRenderNPCs(renderChars);
+        helper.setRenderChars(renderChars);
         
         // show frame
         frame.pack();
@@ -645,7 +645,7 @@ public class GraphicalNW2PNG implements Listener, ActionListener {
           renderNPCs = rendernpcsToggle.isSelected();
           helper.setRenderNPCs(renderNPCs);
         } else if (object == rendercharsToggle) {
-          renderNPCs = rendercharsToggle.isSelected();
+          renderChars = rendercharsToggle.isSelected();
           helper.setRenderChars(renderChars);
         } else if (object == generateButton) {
           
