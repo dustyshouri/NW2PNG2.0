@@ -6,5 +6,6 @@ door=door.png
 // An example of defining a gani(not necessarily a showcharacter), and all possible flags 
 // Attributes defined here will not overwrite attributes defined in the NPC itself.
 npcchar=head:head0.png,gani:idle,dir:1,skin:orange,coat:white,sleeves:blue,shoes:red,belt:black,shield:shield1.png,body:body.png,attr1:hat0.png,attr2:null,attr3:null,param1:null
-ninja=skin:black,belt:black,coat:gray,sleeves:gray,shoes:black,head:head19.png,shield:no-shield.png,gani:idle,dir:2
+ninja=skin:black,belt:black,coat:gray,sleeves:gray,shoes:black,head:head19.png,shield:no-shield.png,gani:idle,dir:2,attr1:hat0.png
 cactus=classic_cactus1.png
+test=gani:walk

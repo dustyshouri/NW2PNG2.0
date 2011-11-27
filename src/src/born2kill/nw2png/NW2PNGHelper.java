@@ -26,7 +26,7 @@ public class NW2PNGHelper implements Runnable {
     private File outputFile;
     private Listener listener;
     private String graalDir = "C:\\Program Files\\Graal\\",filenamecacheDir,parsingLine;
-    private boolean renderinggmap = false,filterOutput = true,splitImages = false,renderNPCs = true;
+    private boolean renderinggmap = false,filterOutput = true,splitImages = false,renderNPCs = true,renderChars = true;
     
     int ganiOffsetx = 0;
     int ganiOffsety = 0;
@@ -50,7 +50,6 @@ public class NW2PNGHelper implements Runnable {
       this.filterOutput = filter;
     }
     
-    
     public boolean getRenderNPCs() {
       return renderNPCs;
     }
@@ -59,6 +58,13 @@ public class NW2PNGHelper implements Runnable {
       this.renderNPCs = filter;
     }
     
+    public boolean getRenderChars() {
+      return renderChars;
+    }
+    
+    public void setRenderChars(boolean filter) {
+      this.renderChars = filter;
+    }
     
     public boolean getSplit() {
       return splitImages;
@@ -293,11 +299,9 @@ public class NW2PNGHelper implements Runnable {
                   // Create array to store showcharacter/gani info in
                   // attrs = {gani,#c0,#c1,#c2,#c3,#c4,#P1,#P2,#P3,#1,#2,#3,#8,param1,dir};
                   String[] attrs = new String[15];
-                  boolean foundshowcharacter = false;
 
                   String npc_imgpart = level_reader.readLine();
-                  boolean foundgani = false;
-                  boolean foundsetimgpart = false;
+                  boolean foundshowcharacter = false,foundgani = false,foundsetimgpart = false,foundignorerender = false;
                   
                   // Loop for parsing NPC script. It will only scan ahead 300 lines, or until it finds NPCEND
                   for (int j = 0; j < 300; j++) {
@@ -316,10 +320,10 @@ public class NW2PNGHelper implements Runnable {
                       //getJoin(tokens[1])
                       String newImg = getJoin(tokens[1]);
                       if (newImg != null) {
-                        if (newImg.indexOf(",") < 0 && level_file_line.contains("-")) {
+                        if (newImg.indexOf(":") < 0 && level_file_line.contains("-")) {
                           level_file_line = level_file_line.replace("-",newImg);
                         } else {
-                          if (newImg.indexOf(":") >= 0) {
+                          if (newImg.indexOf(":") > -1) {
                             newImg = newImg.replaceAll("\\s+","");
                             String[] newImgTokens = newImg.split(",");
                           
@@ -328,7 +332,7 @@ public class NW2PNGHelper implements Runnable {
                               prop = prop.toLowerCase();
                               String propvalue = s.substring(s.indexOf(":")+1);
                               propvalue = propvalue.toLowerCase();
-                            
+
                               if (attrs[0] == null && prop.equals("gani"))         attrs[0] = propvalue + ".gani";
                               else if (attrs[1] == null && prop.equals("skin"))    attrs[1] = propvalue;
                               else if (attrs[2] == null && prop.equals("coat"))    attrs[2] = propvalue;
@@ -345,43 +349,48 @@ public class NW2PNGHelper implements Runnable {
                               else if (attrs[13] == null && prop.equals("param1")) attrs[13] = propvalue;
                               else if (attrs[14] == null && prop.equals("dir"))    attrs[14] = propvalue;
                             }
+                            
                             if (attrs[0] == null) attrs[0] = "idle.gani";
+                            
                             foundshowcharacter = true;
                           }
                         }
                       }
                     } 
                     
-                    if (npc_imgpart.indexOf("setcharprop") > -1) {
+                    if (npc_imgpart.indexOf("setcharprop") > -1) {     
                       String prop = npc_imgpart.substring(12,npc_imgpart.indexOf(",")).toLowerCase();
                       prop = prop.replaceAll("\\s+","");
                       String propvalue = npc_imgpart.substring(npc_imgpart.indexOf(",")+1,npc_imgpart.indexOf(";"));
                       propvalue = propvalue.trim();
-                      if (prop.equals("#c0")) attrs[1] = propvalue;
-                      else if (prop.equals("#c1")) attrs[2] = propvalue;
-                      else if (prop.equals("#c2")) attrs[3] = propvalue;
-                      else if (prop.equals("#c3")) attrs[4] = propvalue;
-                      else if (prop.equals("#c4")) attrs[5] = propvalue;
-                      else if (prop.equals("#p1")) attrs[6] = propvalue;
-                      else if (prop.equals("#p2")) attrs[7] = propvalue;
-                      else if (prop.equals("#p3")) attrs[8] = propvalue;
-                      else if (prop.equals("#1"))  attrs[9] = propvalue;
-                      else if (prop.equals("#2"))  attrs[10] = propvalue;
-                      else if (prop.equals("#3"))  attrs[11] = propvalue;
-                      else if (prop.equals("#8"))  attrs[12] = propvalue;
+                      
+                      if (prop.equals("#c0") && attrs[1] == null) attrs[1] = propvalue;
+                      else if (prop.equals("#c1") && attrs[2] == null) attrs[2] = propvalue;
+                      else if (prop.equals("#c2") && attrs[3] == null) attrs[3] = propvalue;
+                      else if (prop.equals("#c3") && attrs[4] == null) attrs[4] = propvalue;
+                      else if (prop.equals("#c4") && attrs[5] == null) attrs[5] = propvalue;
+                      else if (prop.equals("#p1") && attrs[6] == null) attrs[6] = propvalue;
+                      else if (prop.equals("#p2") && attrs[7] == null) attrs[7] = propvalue;
+                      else if (prop.equals("#p3") && attrs[8] == null) attrs[8] = propvalue;
+                      else if (prop.equals("#1") && attrs[9] == null)  attrs[9] = propvalue;
+                      else if (prop.equals("#2") && attrs[10] == null)  attrs[10] = propvalue;
+                      else if (prop.equals("#3") && attrs[11] == null)  attrs[11] = propvalue;
+                      else if (prop.equals("#8") && attrs[12] == null)  attrs[12] = propvalue;
                     }
                     
-                    if (npc_imgpart.indexOf("dir") > -1) {
+                    if (npc_imgpart.startsWith("dir") || npc_imgpart.startsWith("this.dir")) {
                       npc_imgpart = npc_imgpart.replaceAll("\\s+","");
                       npc_imgpart = npc_imgpart.replace("this.","");
                       int findequal = npc_imgpart.indexOf("=")+1;
                       
-                      String test_dir = npc_imgpart.substring(findequal,findequal+1);
-                      try {
-                        Integer.parseInt(test_dir);
-                        attrs[14] = npc_imgpart.substring(findequal,findequal+1);
-                      } catch(Exception e) {
-                        writeLog(e);
+                      if (npc_imgpart.substring(0,findequal-1).equals("dir") && attrs[14] == null) {
+                        String test_dir = npc_imgpart.substring(findequal,findequal+1);
+                        try {
+                          Integer.parseInt(test_dir);
+                          attrs[14] = npc_imgpart.substring(findequal,findequal+1);
+                        } catch(Exception e) {
+                          writeLog(e);
+                        }
                       }
                     } else if (npc_imgpart.trim().startsWith("x") || npc_imgpart.trim().startsWith("this.x")) {
                       // Parse X modifications to NPC
@@ -424,7 +433,7 @@ public class NW2PNGHelper implements Runnable {
                         if (newY >= 0) NPCy = findDouble(npc_tokens[1]);
                       }
                     } else if (npc_imgpart.startsWith("this.")) {
-                      String[] checkFor = {"attr[1]","attr[2]","attr[3]","body","bodyimg","colors[0]","colors[1]","colors[2]","colors[3]","colors[4]","head","headimg","shield","shieldimg","sword","swordimg"};
+                      String[] checkFor = {"attr[1]","attr[2]","attr[3]","body","bodyimg","colors[0]","colors[1]","colors[2]","colors[3]","colors[4]","head","headimg","ignorerender","shield","shieldimg","sword","swordimg"};
 
                       npc_imgpart = npc_imgpart.replaceAll("\"","");
                       String prop = npc_imgpart;
@@ -443,25 +452,26 @@ public class NW2PNGHelper implements Runnable {
                         String propvalue = npc_imgpart.substring(npc_imgpart.indexOf("=")+1,npc_imgpart.indexOf(";"));
                         propvalue = propvalue.trim();
     
-                        if (prop.equals("colors[0]"))      attrs[1] = propvalue;
-                        else if (prop.equals("colors[1]")) attrs[2] = propvalue;
-                        else if (prop.equals("colors[2]")) attrs[3] = propvalue;
-                        else if (prop.equals("colors[3]")) attrs[4] = propvalue;
-                        else if (prop.equals("colors[4]")) attrs[5] = propvalue;
-                        else if (prop.equals("attr[1]"))   attrs[6] = propvalue;
-                        else if (prop.equals("attr[2]"))   attrs[7] = propvalue;
-                        else if (prop.equals("attr[3]"))   attrs[8] = propvalue;
-                        else if (prop.equals("sword")  || prop.equals("swordimg"))  attrs[9] = propvalue;
-                        else if (prop.equals("shield") || prop.equals("shieldimg")) attrs[10] = propvalue;
-                        else if (prop.equals("head")   || prop.equals("headimg"))   attrs[11] = propvalue;
-                        else if (prop.equals("body")   || prop.equals("bodyimg"))   attrs[12] = propvalue;
+                        if (prop.equals("colors[0]") && attrs[1] == null) attrs[1] = propvalue;
+                        else if (prop.equals("colors[1]") && attrs[2] == null) attrs[2] = propvalue;
+                        else if (prop.equals("colors[2]") && attrs[3] == null) attrs[3] = propvalue;
+                        else if (prop.equals("colors[3]") && attrs[4] == null) attrs[4] = propvalue;
+                        else if (prop.equals("colors[4]") && attrs[5] == null) attrs[5] = propvalue;
+                        else if (prop.equals("attr[1]") && attrs[6] == null) attrs[6] = propvalue;
+                        else if (prop.equals("attr[2]") && attrs[7] == null) attrs[7] = propvalue;
+                        else if (prop.equals("attr[3]") && attrs[8] == null) attrs[8] = propvalue;
+                        else if ((prop.equals("sword")  || prop.equals("swordimg")) && attrs[9] == null) attrs[9] = propvalue;
+                        else if ((prop.equals("shield") || prop.equals("shieldimg")) && attrs[10] == null) attrs[10] = propvalue;
+                        else if ((prop.equals("head")   || prop.equals("headimg")) && attrs[11] == null) attrs[11] = propvalue;
+                        else if ((prop.equals("body")   || prop.equals("bodyimg")) && attrs[12] == null) attrs[12] = propvalue;
+                        else if (prop.equals("ignorerender") && propvalue.equals("true")) foundignorerender = true;
                       }
                     }
                     
-                    if (npc_imgpart.indexOf("showcharacter") > -1) {
+                    if (npc_imgpart.startsWith("showcharacter")) {
                       // Found a showcharacter?
                       foundshowcharacter = true;
-                    } else if (npc_imgpart.indexOf("setcharani") > -1 && npc_imgpart.indexOf("else") < 0 && foundgani == false) {
+                    } else if (npc_imgpart.startsWith("setcharani") && foundgani == false) {
                         // Found setcharani? Check for 'else' to omit overwriting original setcharani
                         npc_imgpart = npc_imgpart.replace("this.","");
                         npc_imgpart = npc_imgpart.replace("("," ");
@@ -475,11 +485,12 @@ public class NW2PNGHelper implements Runnable {
                         String ganiname = tokens[1].substring(0,tokens[1].indexOf(",")).toLowerCase();
                         String ganiparam = tokens[1].substring(tokens[1].indexOf(",")).toLowerCase();
                       
+                        if (ganiname.indexOf("[") > -1) ganiname = ganiname.substring(0,ganiname.indexOf("["));
                         attrs[0] = ganiname + ".gani";
                         attrs[13] = ganiparam;
                         
                         foundgani = true;
-                    } else if (npc_imgpart.indexOf("setimgpart") > -1) {
+                    } else if (npc_imgpart.startsWith("setimgpart")) {
                       // If 'setimgpart' is found, append its values to the render data
                       npc_imgpart = npc_imgpart.replaceAll("\"","");
                       npc_imgpart = npc_imgpart.replace("this.","");
@@ -490,12 +501,13 @@ public class NW2PNGHelper implements Runnable {
                       int endparse;
                       if (npc_imgpart.indexOf(")") > -1) endparse = npc_imgpart.indexOf(")");
                       else endparse = npc_imgpart.indexOf(";");
+                      String imgname = npc_imgpart.substring(npc_imgpart.indexOf(" ")+1,startparse);
                       String partdata = npc_imgpart.substring(startparse,endparse);
                       partdata = partdata.replaceAll("\\s+","");
 
                       String imgpartvalues = partdata.replace(","," ");
-                      level_file.add(level_file_line + imgpartvalues);
-                      //level_file.add("NPCPART " + partdata.replace(","," "));
+                      
+                      if (!foundignorerender) level_file.add("NPC " + imgname + " " + NPCx + " " + NPCy + imgpartvalues);
                       foundsetimgpart = true;
                       break;
                     } else if (npc_imgpart.startsWith("NPCEND")) {
@@ -503,7 +515,7 @@ public class NW2PNGHelper implements Runnable {
                       // If showcharacter is dound, but no gani is found provide it with default 'idle.gani'
                       if (foundshowcharacter == true && attrs[0] == null) attrs[0] = "idle.gani";
                       // Assign the gani the position of the NPC and add it to the gani StringList
-                      if (attrs[0] != null) {
+                      if (attrs[0] != null && !foundignorerender) {
                         String[] pos = {String.valueOf(NPCx),String.valueOf(NPCy)};
                         String[][] concat = {attrs,pos};
                         ganis.add(concat);
@@ -517,7 +529,7 @@ public class NW2PNGHelper implements Runnable {
                     npc_imgpart = level_reader.readLine();
                   }
                   // If no setimgpart is found, add NPC image and position to the list for rendering
-                  if (foundsetimgpart == false && !level_file_line.startsWith("NPC -")) level_file.add(level_file_line + " 0 0 -1 -1");
+                  if (foundsetimgpart == false && !level_file_line.startsWith("NPC -") && !foundignorerender) level_file.add(level_file_line + " 0 0 -1 -1");
                   level_reader.reset();
                 }
 
@@ -645,6 +657,7 @@ public class NW2PNGHelper implements Runnable {
             // Loop through the found ganis and render
             if (getRenderNPCs() == true) {
               for (String[][] gani: ganis) {
+                if (gani[0][12] != null && getRenderChars() == false) continue;
                 BufferedImage gani_render = getGani(gani[0]);
                 if (gani_render == null) {
                   getListener().sendMessage("Warning : Couldn't render the gani " + gani[0][0]);
@@ -838,9 +851,17 @@ public class NW2PNGHelper implements Runnable {
               int image_dh = findInt(npc[6]);
           
               try {
+                npc[0] = npc[0].toLowerCase();
+                if (npc[0].endsWith(".mng")) {
+                  getListener().sendMessage("Warning : MNG images not supported @ " + npc[0]);
+                  continue;
+                }
+                if (npc[0] == null || npc[0].equals("-")) continue;
+                
                 BufferedImage npc_image = ImageIO.read(new File(getImageLocation(npc[0])));
                 if (npc_image == null) {
                     getListener().sendMessage("Warning : Unknown image type " + npc[0].substring(npc[0].lastIndexOf(".") + 1).toUpperCase());
+                    continue;
                 } else {
                     image_dw = image_dw == -1 ? npc_image.getWidth() : image_dw;
                     image_dh = image_dh == -1 ? npc_image.getHeight() : image_dh;
@@ -900,6 +921,12 @@ public class NW2PNGHelper implements Runnable {
     private String getImageLocation(String imageName) {
       String GraalFolder = filenamecacheDir;
       
+      if (imageName.equals("-")) return null;
+      if (imageName.toLowerCase().endsWith(".mng")) {
+        getListener().sendMessage("Warning: Does not support .MNG for " + imageName);
+        return null;
+      }
+      
         try {
           //FileReader filenamecache = new FileReader(getGraalDir().substring(0, getGraalDir().lastIndexOf(File.separator) + 1) + "FILENAMECACHE.txt");
           
@@ -929,14 +956,14 @@ public class NW2PNGHelper implements Runnable {
       // attrs = {gani,#c0,#c1,#c2,#c3,#c4,#P1,#P2,#P3,#1,#2,#3,#8,param1,dir};
       //if (tiledef_image != null) {
       //  g.drawImage(tiledef_image,Integer.parseInt(i[2]),Integer.parseInt(i[3]), null);
-      
+
       String ganiName = attr[0];
       if (ganiName == null) return null;
       int dir = 2;
       if (attr[14] != null) {
         dir = Integer.parseInt(attr[14]);
       }
-      
+
       ganiOffsetx = ganiOffsety = 0;
       
       // DEFINE DEFAULTS
@@ -1037,7 +1064,7 @@ public class NW2PNGHelper implements Runnable {
         gani_reader.close();
         
         // attrs = {gani,#c0,#c1,#c2,#c3,#c4,#P1,#P2,#P3,#1,#2,#3,#8,param1,dir};
-        if (attr[6]  != null) img_attr1    = attr[1];
+        if (attr[6]  != null) img_attr1    = attr[6];
         if (attr[7]  != null) img_attr2    = attr[7];
         if (attr[8]  != null) img_attr3    = attr[8];
         if (attr[9]  != null) img_sword    = attr[9];

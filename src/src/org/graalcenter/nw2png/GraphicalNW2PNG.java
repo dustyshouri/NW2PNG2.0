@@ -12,7 +12,7 @@ import javax.swing.*;
 
 public class GraphicalNW2PNG implements Listener, ActionListener {
     NW2PNGHelper helper;
-    private boolean isGenerating = false,filterOutput = true,splitImages = false,renderNPCs = true;
+    private boolean isGenerating = false,filterOutput = true,splitImages = false,renderNPCs = true,renderChars = true;
     
     File tilesetdir,sourcedir,outputdir,graaldir;
     
@@ -40,6 +40,7 @@ public class GraphicalNW2PNG implements Listener, ActionListener {
     JCheckBox filterToggle;
     JCheckBox partimgsToggle;
     JCheckBox rendernpcsToggle;
+    JCheckBox rendercharsToggle;
 
     JScrollPane logScrollPane;
     JTextPane logTextPane;
@@ -173,6 +174,11 @@ public class GraphicalNW2PNG implements Listener, ActionListener {
             if (dir_line.indexOf("null") < 0) renderNPCs = Boolean.parseBoolean(dirname);
           }
           
+          if (dir_line.startsWith("renderChars=")) {
+            dirname = dir_line.substring(dir_line.indexOf("=") + 1);
+            if (dir_line.indexOf("null") < 0) renderChars = Boolean.parseBoolean(dirname);
+          }
+          
           
           dir_line = dirs_reader.readLine();
         }
@@ -198,6 +204,7 @@ public class GraphicalNW2PNG implements Listener, ActionListener {
         out.write("filterOutput=" + filterOutput + "\n");
         out.write("splitImages=" + splitImages + "\n");
         out.write("renderNPCs=" + renderNPCs + "\n");
+        out.write("renderChars=" + renderChars + "\n");
         out.close();
       } catch (FileNotFoundException e) {
         e.printStackTrace();
@@ -212,8 +219,8 @@ public class GraphicalNW2PNG implements Listener, ActionListener {
 
     private void makeFrame() {
         frame = new JFrame("NW2PNG");
-        frame.setMinimumSize(new Dimension(400, 400));
-        frame.setPreferredSize(new Dimension(400, 400));
+        frame.setMinimumSize(new Dimension(500, 400));
+        frame.setPreferredSize(new Dimension(500, 400));
         frame.setLocationRelativeTo(null);
         frame.setLayout(new GridBagLayout());
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -487,6 +494,22 @@ public class GraphicalNW2PNG implements Listener, ActionListener {
         constraints.insets = new Insets(0, 117, 5, 0);
 
         topPanel.add(rendernpcsToggle, constraints);
+        
+        // Toggle renderChars
+        rendercharsToggle = new JCheckBox("Render Characters");
+        rendercharsToggle.addActionListener(this);
+
+        constraints = new GridBagConstraints();
+        constraints.weightx = 0;
+        constraints.weighty = 0;
+        constraints.fill = GridBagConstraints.NONE;
+        constraints.anchor = GridBagConstraints.WEST;
+        constraints.gridx = 1;
+        constraints.gridy = 6;
+        constraints.gridwidth = 0;
+        constraints.insets = new Insets(0, 205, 5, 0);
+
+        topPanel.add(rendercharsToggle, constraints);
 
         // Generate
         generateButton = new JButton("Generate");
@@ -505,7 +528,7 @@ public class GraphicalNW2PNG implements Listener, ActionListener {
         topPanel.add(generateButton, constraints);
         
         // credit
-        creditLabel = new JLabel("<html><p align=\"left\">Originally written by Alex (born2kill).<br>Modifications by Dusty and Chris Vimes.GUI by Chris Vimes.</p></html>");
+        creditLabel = new JLabel("<html><p align=\"left\">Originally written by Alex (born2kill). Modifications by Dusty and Chris Vimes.GUI by Chris Vimes.</p></html>");
 
         constraints = new GridBagConstraints();
         constraints.weightx = 1;
@@ -527,6 +550,8 @@ public class GraphicalNW2PNG implements Listener, ActionListener {
         helper.setSplit(splitImages);
         rendernpcsToggle.setSelected(renderNPCs);
         helper.setRenderNPCs(renderNPCs);
+        rendercharsToggle.setSelected(renderChars);
+        helper.setRenderNPCs(renderChars);
         
         // show frame
         frame.pack();
@@ -619,7 +644,10 @@ public class GraphicalNW2PNG implements Listener, ActionListener {
         } else if (object == rendernpcsToggle) {
           renderNPCs = rendernpcsToggle.isSelected();
           helper.setRenderNPCs(renderNPCs);
-        }  else if (object == generateButton) {
+        } else if (object == rendercharsToggle) {
+          renderNPCs = rendercharsToggle.isSelected();
+          helper.setRenderChars(renderChars);
+        } else if (object == generateButton) {
           
           SaveDirs();
           
