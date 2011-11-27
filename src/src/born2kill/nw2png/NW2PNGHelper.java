@@ -333,8 +333,10 @@ public class NW2PNGHelper implements Runnable {
                               String propvalue = s.substring(s.indexOf(":")+1);
                               propvalue = propvalue.toLowerCase();
 
-                              if (attrs[0] == null && prop.equals("gani"))         attrs[0] = propvalue + ".gani";
-                              else if (attrs[1] == null && prop.equals("skin"))    attrs[1] = propvalue;
+                              if (attrs[0] == null && prop.equals("gani"))         {
+                                foundshowcharacter = true;
+                                attrs[0] = propvalue + ".gani";
+                              } else if (attrs[1] == null && prop.equals("skin"))    attrs[1] = propvalue;
                               else if (attrs[2] == null && prop.equals("coat"))    attrs[2] = propvalue;
                               else if (attrs[3] == null && prop.equals("sleeves")) attrs[3] = propvalue;
                               else if (attrs[4] == null && prop.equals("shoes"))   attrs[4] = propvalue;
@@ -350,9 +352,7 @@ public class NW2PNGHelper implements Runnable {
                               else if (attrs[14] == null && prop.equals("dir"))    attrs[14] = propvalue;
                             }
                             
-                            if (attrs[0] == null) attrs[0] = "idle.gani";
-                            
-                            foundshowcharacter = true;
+                            //if (attrs[0] == null) attrs[0] = "idle.gani";
                           }
                         }
                       }
@@ -378,7 +378,7 @@ public class NW2PNGHelper implements Runnable {
                       else if (prop.equals("#8") && attrs[12] == null)  attrs[12] = propvalue;
                     }
                     
-                    if (npc_imgpart.startsWith("dir") || npc_imgpart.startsWith("this.dir")) {
+                    if ((npc_imgpart.startsWith("dir") || npc_imgpart.startsWith("this.dir")) && attrs[14] == null) {
                       npc_imgpart = npc_imgpart.replaceAll("\\s+","");
                       npc_imgpart = npc_imgpart.replace("this.","");
                       int findequal = npc_imgpart.indexOf("=")+1;
@@ -468,29 +468,35 @@ public class NW2PNGHelper implements Runnable {
                       }
                     }
                     
-                    if (npc_imgpart.startsWith("showcharacter")) {
+                    if (npc_imgpart.startsWith("showcharacter") || npc_imgpart.startsWith("this.showcharacter")) {
                       // Found a showcharacter?
                       foundshowcharacter = true;
-                    } else if (npc_imgpart.startsWith("setcharani") && foundgani == false) {
+                    } else if ((npc_imgpart.startsWith("setcharani") || npc_imgpart.startsWith("this.setcharani")) && attrs[0] == null) {
                         // Found setcharani? Check for 'else' to omit overwriting original setcharani
                         npc_imgpart = npc_imgpart.replace("this.","");
                         npc_imgpart = npc_imgpart.replace("("," ");
                         npc_imgpart = npc_imgpart.replace(")","");
                         npc_imgpart = npc_imgpart.replaceAll("\"","");
+                        npc_imgpart = npc_imgpart.replace("setcharani","");
+                        npc_imgpart = npc_imgpart.replace(";","");
                         npc_imgpart = npc_imgpart.trim();
                         
-                        String[] tokens = npc_imgpart.split("\\s+");
-                        
+                        if (npc_imgpart.indexOf(",") > -1) {
+                          String[] tokens = npc_imgpart.split(",");
+
                         //npc_imgpart = tokens[1].substring(npc_imgpart.indexOf(",")).toLowerCase();
-                        String ganiname = tokens[1].substring(0,tokens[1].indexOf(",")).toLowerCase();
-                        String ganiparam = tokens[1].substring(tokens[1].indexOf(",")).toLowerCase();
+                          if (tokens.length > 0) {
+                            String ganiname = tokens[0].toLowerCase().trim();
+                            String ganiparam = null;
+                            if (tokens.length > 1) ganiparam = tokens[1].toLowerCase().trim();
                       
-                        if (ganiname.indexOf("[") > -1) ganiname = ganiname.substring(0,ganiname.indexOf("["));
-                        attrs[0] = ganiname + ".gani";
-                        attrs[13] = ganiparam;
-                        
-                        foundgani = true;
-                    } else if (npc_imgpart.startsWith("setimgpart")) {
+                            if (ganiname.indexOf("[") > -1) ganiname = ganiname.substring(0,ganiname.indexOf("["));
+                            attrs[0] = ganiname + ".gani";
+                            attrs[13] = ganiparam;
+                            foundgani = true;
+                          }
+                        }
+                    } else if (npc_imgpart.startsWith("setimgpart") || npc_imgpart.startsWith("this.setimgpart")) {
                       // If 'setimgpart' is found, append its values to the render data
                       npc_imgpart = npc_imgpart.replaceAll("\"","");
                       npc_imgpart = npc_imgpart.replace("this.","");
@@ -513,18 +519,15 @@ public class NW2PNGHelper implements Runnable {
                     } else if (npc_imgpart.startsWith("NPCEND")) {
                       // End of NPC is found, stop the loop
                       // If showcharacter is dound, but no gani is found provide it with default 'idle.gani'
-                      if (foundshowcharacter == true && attrs[0] == null) attrs[0] = "idle.gani";
                       // Assign the gani the position of the NPC and add it to the gani StringList
-                      if (attrs[0] != null && !foundignorerender) {
+                      if ((attrs[0] != null || foundshowcharacter) && !foundignorerender) {
+                        if (attrs[0] == null ) attrs[0] = "idle.gani";
                         String[] pos = {String.valueOf(NPCx),String.valueOf(NPCy)};
                         String[][] concat = {attrs,pos};
                         ganis.add(concat);
                       }
                       break;
                     }
-                    
-                    // If showcharacter is dound, but no gani is found provide it with default 'idle.gani'
-                    if (foundshowcharacter == true && attrs[0] == null) attrs[0] = "idle.gani";
                     
                     npc_imgpart = level_reader.readLine();
                   }
@@ -1230,7 +1233,6 @@ public class NW2PNGHelper implements Runnable {
         int return_val = Integer.parseInt(s);
         return return_val;
       } catch (java.lang.NumberFormatException e) {
-        writeLog(e);
         try {
           ScriptEngineManager mgr = new ScriptEngineManager();
           ScriptEngine engine = mgr.getEngineByName("JavaScript");
@@ -1250,7 +1252,6 @@ public class NW2PNGHelper implements Runnable {
         double return_val = Double.parseDouble(s);
         return return_val;
       } catch (java.lang.NumberFormatException e) {
-        writeLog(e);
         try {
           ScriptEngineManager mgr = new ScriptEngineManager();
           ScriptEngine engine = mgr.getEngineByName("JavaScript");
